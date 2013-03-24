@@ -15,19 +15,19 @@ log = logging.getLogger(__name__)
 URLPREFIX = 'https://cloud-images.ubuntu.com/precise/current/'
 
 PREFIXES = dict(
-    server='precise-server-cloudimg-amd64-disk1.',
-    desktop='precise-desktop-cloudimg-amd64.',
+    server='{release}-server-cloudimg-amd64-disk1.',
+    desktop='{release}-desktop-cloudimg-amd64.',
     )
 
 SUFFIX = '.img'
 
 
-def list_cloud_images(pool, flavor):
+def list_cloud_images(pool, release, flavor):
     """
     List all Ubuntu 12.04 Cloud image in the libvirt pool.
     Return the keys.
     """
-    PREFIX = PREFIXES[flavor]
+    PREFIX = PREFIXES[flavor].format(release=release)
     for name in pool.listVolumes():
         log.debug('Considering image: %s', name)
         if not name.startswith(PREFIX):
@@ -42,12 +42,12 @@ def list_cloud_images(pool, flavor):
         yield name
 
 
-def find_cloud_image(pool, flavor):
+def find_cloud_image(pool, release, flavor):
     """
     Find an Ubuntu 12.04 Cloud image in the libvirt pool.
     Return the name.
     """
-    names = list_cloud_images(pool, flavor=flavor)
+    names = list_cloud_images(pool, release=release, flavor=flavor)
     # converting into a list because max([]) raises ValueError, and we
     # really don't want to confuse that with exceptions from inside
     # the generator
@@ -83,7 +83,7 @@ def upload_volume(vol, fp, sha512):
     stream.finish()
 
 
-def ensure_cloud_image(conn, flavor):
+def ensure_cloud_image(conn, release, flavor):
     """
     Ensure that the Ubuntu 12.04 Cloud image is in the libvirt pool.
     Returns the volume.
@@ -92,7 +92,7 @@ def ensure_cloud_image(conn, flavor):
     pool = conn.storagePoolLookupByName('default')
 
     log.debug('Listing cloud image in libvirt...')
-    name = find_cloud_image(pool=pool, flavor=flavor)
+    name = find_cloud_image(pool=pool, release=release, flavor=flavor)
     if name is not None:
         # all done
         log.debug('Already have cloud image: %s', name)
@@ -111,7 +111,7 @@ def ensure_cloud_image(conn, flavor):
     # volumes have no atomic completion marker; this will forever be
     # racy!
     name = '{prefix}{serial}{suffix}'.format(
-        prefix=PREFIXES[flavor],
+        prefix=PREFIXES[flavor].format(release=release),
         serial=image['serial'],
         suffix=SUFFIX,
         )

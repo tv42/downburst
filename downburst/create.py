@@ -31,7 +31,11 @@ def create(args):
     log.debug('Opening libvirt pool...')
     pool = conn.storagePoolLookupByName('default')
 
-    vol = image.ensure_cloud_image(conn=conn, flavor=args.flavor)
+    vol = image.ensure_cloud_image(
+        conn=conn,
+        release=args.release,
+        flavor=args.flavor,
+        )
 
     meta_data = meta.gen_meta(
         name=args.name,
@@ -101,6 +105,10 @@ def make(parser):
     Create an Ubuntu Cloud Image vm
     """
     parser.add_argument(
+        '--release',
+        help='release of Ubuntu: for example, "quantal" or "precise"',
+        )
+    parser.add_argument(
         '--flavor',
         choices=['server', 'desktop'],
         help='flavor of Ubuntu: "server" or "desktop"',
@@ -130,6 +138,7 @@ def make(parser):
         )
     parser.set_defaults(
         func=create,
+        release="quantal",
         flavor="server",
         user_data=[],
         meta_data=[],
