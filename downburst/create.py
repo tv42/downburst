@@ -16,7 +16,16 @@ from . import wait
 log = logging.getLogger(__name__)
 
 
+RELEASE_ALIASES = {
+    '12.04': 'precise',
+    '12.10': 'quantal',
+    '13.04': 'raring',
+    }
+
+
 def create(args):
+    args.release = RELEASE_ALIASES.get(args.release, args.release)
+
     log.debug('Connecting to libvirt...')
     conn = libvirt.open(args.connect)
     if conn is None:
