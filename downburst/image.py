@@ -14,15 +14,20 @@ log = logging.getLogger(__name__)
 
 URLPREFIX = 'https://cloud-images.ubuntu.com/precise/current/'
 
-PREFIX = 'precise-server-cloudimg-amd64-disk1.'
+PREFIXES = dict(
+    server='precise-server-cloudimg-amd64-disk1.',
+    desktop='precise-desktop-cloudimg-amd64.',
+    )
+
 SUFFIX = '.img'
 
 
-def list_cloud_images(pool):
+def list_cloud_images(pool, flavor):
     """
     List all Ubuntu 12.04 Cloud image in the libvirt pool.
     Return the keys.
     """
+    PREFIX = PREFIXES[flavor]
     for name in pool.listVolumes():
         log.debug('Considering image: %s', name)
         if not name.startswith(PREFIX):
@@ -37,12 +42,12 @@ def list_cloud_images(pool):
         yield name
 
 
-def find_cloud_image(pool):
+def find_cloud_image(pool, flavor):
     """
     Find an Ubuntu 12.04 Cloud image in the libvirt pool.
     Return the name.
     """
-    names = list_cloud_images(pool)
+    names = list_cloud_images(pool, flavor=flavor)
     # converting into a list because max([]) raises ValueError, and we
     # really don't want to confuse that with exceptions from inside
     # the generator
@@ -78,7 +83,7 @@ def upload_volume(vol, fp, sha512):
     stream.finish()
 
 
-def ensure_cloud_image(conn):
+def ensure_cloud_image(conn, flavor):
     """
     Ensure that the Ubuntu 12.04 Cloud image is in the libvirt pool.
     Returns the volume.
@@ -87,7 +92,7 @@ def ensure_cloud_image(conn):
     pool = conn.storagePoolLookupByName('default')
 
     log.debug('Listing cloud image in libvirt...')
-    name = find_cloud_image(pool=pool)
+    name = find_cloud_image(pool=pool, flavor=flavor)
     if name is not None:
         # all done
         log.debug('Already have cloud image: %s', name)
@@ -106,7 +111,7 @@ def ensure_cloud_image(conn):
     # volumes have no atomic completion marker; this will forever be
     # racy!
     name = '{prefix}{serial}{suffix}'.format(
-        prefix=PREFIX,
+        prefix=PREFIXES[flavor],
         serial=image['serial'],
         suffix=SUFFIX,
         )

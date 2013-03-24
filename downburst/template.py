@@ -29,7 +29,10 @@ def volume_clone(
     root = volume(name=name, capacity=capacity)
 
     backing = etree.SubElement(root, 'backingStore')
-    etree.SubElement(backing, 'format', type='qcow2')
+    # examples tend to show specifying the backing image format
+    # directly here, but that doesn't seem to be strictly necessary,
+    # and server images are qcow2 while desktop is raw, so it's easier
+    # to avoid saying anything.
     etree.SubElement(backing, 'path').text = parent_vol.key()
 
     return root
@@ -107,3 +110,27 @@ def domain(
             etree.SubElement(net_elem, 'mac', address=mac)
 
     return tree
+
+
+def add_shared_floppy(domainxml, floppy_key):
+    # <disk type='file' device='floppy'>
+    #   <driver name='qemu' type='raw'/>
+    #   <source file='/var/lib/libvirt/images/quantal-desktop-cloudimg-amd64-floppy.SOMETHING'/>
+    #   <target dev='fda' bus='fdc'/>
+    #   <readonly/>
+    #   <shareable/>
+    # </disk>
+    # <controller type='fdc'/>
+    (devices,) = domainxml.xpath('/domain/devices')
+    floppy = etree.SubElement(devices, 'disk', type='file', device='floppy')
+    etree.SubElement(floppy, 'driver', name='qemu', type='raw')
+    etree.SubElement(floppy, 'source', file=floppy_key)
+    etree.SubElement(floppy, 'target', dev='fda', bus='fdc')
+    etree.SubElement(floppy, 'readonly')
+    etree.SubElement(floppy, 'shareable')
+    etree.SubElement(devices, 'controller', type='fdc')
+
+
+def boot_from(domainxml, bootdev):
+    (boot,) = domainxml.xpath('/domain/os/boot')
+    boot.set('dev', bootdev)

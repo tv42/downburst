@@ -1,5 +1,6 @@
 import libvirt
 import logging
+import os.path
 
 from lxml import etree
 
@@ -30,7 +31,7 @@ def create(args):
     log.debug('Opening libvirt pool...')
     pool = conn.storagePoolLookupByName('default')
 
-    vol = image.ensure_cloud_image(conn=conn)
+    vol = image.ensure_cloud_image(conn=conn, flavor=args.flavor)
 
     meta_data = meta.gen_meta(
         name=args.name,
@@ -79,6 +80,14 @@ exec eject /dev/cdrom
         cpus=cpus,
         networks=networks,
         )
+    if args.flavor == 'desktop':
+        disk_name = vol.name()
+        base, ext = os.path.splitext(disk_name)
+        base, serial = os.path.splitext(base)
+        floppy_name = base + '-floppy' + serial + ext
+        vol = pool.storageVolLookupByName(floppy_name)
+        template.add_shared_floppy(domainxml, floppy_key=vol.key())
+        template.boot_from(domainxml, 'fd')
     dom = conn.defineXML(etree.tostring(domainxml))
     dom.create()
 
@@ -91,6 +100,11 @@ def make(parser):
     """
     Create an Ubuntu Cloud Image vm
     """
+    parser.add_argument(
+        '--flavor',
+        choices=['server', 'desktop'],
+        help='flavor of Ubuntu: "server" or "desktop"',
+        )
     parser.add_argument(
         '--user-data',
         metavar='FILE',
@@ -116,6 +130,7 @@ def make(parser):
         )
     parser.set_defaults(
         func=create,
+        flavor="server",
         user_data=[],
         meta_data=[],
         )
