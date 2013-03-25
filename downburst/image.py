@@ -137,7 +137,8 @@ def ensure_cloud_image(conn, release, flavor):
     t = tarfile.open(fileobj=r.raw, mode='r|*', bufsize=1024*1024)
 
     # reference to the main volume of this vm template
-    vol = None
+    vol_disk1 = None
+    vol_fs = None
 
     for ti in t:
         if not ti.isfile():
@@ -158,7 +159,7 @@ def ensure_cloud_image(conn, release, flavor):
         f = t.extractfile(ti)
 
         if ti.name.endswith("-disk1.img"):
-            vol = make_volume(
+            vol_disk1 = make_volume(
                 pool=pool,
                 fp=f,
                 release=release,
@@ -167,7 +168,7 @@ def ensure_cloud_image(conn, release, flavor):
                 suffix="-disk1.img",
                 )
         elif ti.name.endswith(".img"):
-            vol = make_volume(
+            vol_fs = make_volume(
                 pool=pool,
                 fp=f,
                 release=release,
@@ -190,4 +191,9 @@ def ensure_cloud_image(conn, release, flavor):
 
     # TODO only here to autodetect capacity
     pool.refresh(flags=0)
-    return vol
+
+    # if we have the partitioned disk image, use it; it's closer to
+    # the mainstream linux experience
+    if vol_disk1 is not None:
+        return vol_disk1
+    return vol_fs
