@@ -28,7 +28,7 @@ setup(
 
     install_requires=[
         'setuptools',
-        'requests',
+        'requests >=1.0',
         'lxml',
         'PyYaml',
         ] + install_requires,

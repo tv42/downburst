@@ -115,7 +115,7 @@ def domain(
 def add_shared_floppy(domainxml, floppy_key):
     # <disk type='file' device='floppy'>
     #   <driver name='qemu' type='raw'/>
-    #   <source file='/var/lib/libvirt/images/quantal-desktop-cloudimg-amd64-floppy.SOMETHING'/>
+    #   <source file='/var/lib/libvirt/images/quantal-desktop-cloudimg-amd64.SERIAL-floppy.img'/>
     #   <target dev='fda' bus='fdc'/>
     #   <readonly/>
     #   <shareable/>

@@ -93,14 +93,13 @@ exec eject /dev/cdrom
         cpus=cpus,
         networks=networks,
         )
-    if args.flavor == 'desktop':
-        disk_name = vol.name()
-        base, ext = os.path.splitext(disk_name)
-        base, serial = os.path.splitext(base)
-        floppy_name = base + '-floppy' + serial + ext
-        vol = pool.storageVolLookupByName(floppy_name)
-        template.add_shared_floppy(domainxml, floppy_key=vol.key())
-        template.boot_from(domainxml, 'fd')
+
+    disk_name = vol.name()
+    base, ext = os.path.splitext(disk_name)
+    floppy_name = base +  '-floppy' + ext
+    vol = pool.storageVolLookupByName(floppy_name)
+    template.add_shared_floppy(domainxml, floppy_key=vol.key())
+    template.boot_from(domainxml, 'fd')
     dom = conn.defineXML(etree.tostring(domainxml))
     dom.create()
 

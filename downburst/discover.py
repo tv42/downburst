@@ -1,40 +1,67 @@
+import csv
 import requests
-import json
+import urllib
+import urlparse
 
 
 BASE_URL = 'https://cloud-images.ubuntu.com/'
-URL = BASE_URL + 'query2/ec2.json'
 
 
-def extract(catalog):
-    for distro in catalog['catalog']:
-        if distro['distro_code_name'] != 'precise':
+def extract(catalog, release, flavor):
+    for row in catalog:
+        if row['release'] != release:
             continue
-        for build in distro['build_types']['server']:
-            if build['release_tag'] != 'release':
-                continue
-            arch = build['arches']['amd64']
-
-            for image in arch['file_list']:
-                if image['file_type'] != 'qcow2':
-                    continue
-                return dict(
-                    serial=build['build_serial'],
-                    url=BASE_URL + image['path'],
-                    sha512=image['sha512'],
-                    )
+        if row['flavor'] != flavor:
+            continue
+        # TODO don't hardcode
+        if row['arch'] != 'amd64':
+            continue
+        return dict(
+            serial=row['serial'],
+            url=urlparse.urljoin(BASE_URL, row['path']),
+            )
 
 
-def fetch():
-    r = requests.get(URL)
+def parse(lines):
+    return csv.DictReader(
+        lines,
+        dialect='excel-tab',
+        fieldnames=[
+            'release',
+            'flavor',
+            'stability',
+            'serial',
+            'arch',
+            'path',
+            'name',
+            ],
+        )
+
+
+def fetch(release, flavor):
+    url = urlparse.urljoin(BASE_URL, 'query/')
+    url = urlparse.urljoin(url, urllib.quote(release, safe='')+'/')
+    url = urlparse.urljoin(url, urllib.quote(flavor, safe='')+'/')
+
+    stability = 'released'
+    if flavor == 'desktop':
+        stability = 'daily'
+    url = urlparse.urljoin(
+        url,
+        urllib.quote(
+            '{stability}-dl.current.txt'.format(
+                stability=stability,
+                ),
+            safe='',
+            ),
+        )
+
+    r = requests.get(url, stream=True)
     r.raise_for_status()
-    try:
-        catalog = r.json
-    except AttributeError:
-        catalog = json.loads(r.content)
-    return catalog
+    return r.iter_lines()
 
 
-def get():
-    catalog = fetch()
-    return extract(catalog)
+def get(release, flavor):
+    lines = fetch(release=release, flavor=flavor)
+    catalog = parse(lines)
+    return extract(catalog, release=release, flavor=flavor)
