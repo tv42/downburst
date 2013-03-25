@@ -95,11 +95,14 @@ exec eject /dev/cdrom
         )
 
     disk_name = vol.name()
-    base, ext = os.path.splitext(disk_name)
-    floppy_name = base +  '-floppy' + ext
-    vol = pool.storageVolLookupByName(floppy_name)
-    template.add_shared_floppy(domainxml, floppy_key=vol.key())
-    template.boot_from(domainxml, 'fd')
+    log.debug("Parent volume is %s", disk_name)
+    if not disk_name.endswith("-disk1.{serial}.img"):
+        base, ext = os.path.splitext(disk_name)
+        floppy_name = base +  '-floppy' + ext
+        vol = pool.storageVolLookupByName(floppy_name)
+        template.add_shared_floppy(domainxml, floppy_key=vol.key())
+        template.boot_from(domainxml, 'fd')
+
     dom = conn.defineXML(etree.tostring(domainxml))
     dom.create()
 
