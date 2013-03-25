@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 URLPREFIX = 'https://cloud-images.ubuntu.com/precise/current/'
 
 PREFIXES = dict(
-    server='{release}-server-cloudimg-amd64-disk1.',
+    server='{release}-server-cloudimg-amd64.',
     desktop='{release}-desktop-cloudimg-amd64.',
     )
 
